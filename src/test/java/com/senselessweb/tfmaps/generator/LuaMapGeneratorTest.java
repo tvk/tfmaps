@@ -34,7 +34,7 @@ public class LuaMapGeneratorTest {
     final Collection<IndustryModel> industries = Lists.newArrayList(coalMine, farm);
     
     final MapModel model = new MapModel("Australia", "A map of australia",
-        8, center, northEast, southWest,  cities, industries, MapSize.SIZE_8X4);
+        8, center, northEast, southWest,  cities, industries, MapSize.SIZE_8, MapSize.SIZE_4);
     
     testee.generate(model, new File("/home/thomas/.steam/steam/steamapps/common/Transport Fever/maps/Schleswig-Holstein/map.lua"));
     

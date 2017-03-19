@@ -96,8 +96,8 @@ public class LuaMapGenerator {
     final double relativeX = (position.getLng() - minLng) / (maxLng - minLng);
     final double relativeY = (position.getLat() - minLat) / (maxLat - minLat);
     
-    final double tfX = - (2.0 * model.getSize().getWidth()) + (relativeX * 4 * model.getSize().getWidth());
-    final double tfY = - (2.0 * model.getSize().getHeight()) + (relativeY * 4 * model.getSize().getHeight());
+    final double tfX = - (2.0 * model.getWidth().getPixel()) + (relativeX * 4 * model.getWidth().getPixel());
+    final double tfY = - (2.0 * model.getHeight().getPixel()) + (relativeY * 4 * model.getHeight().getPixel());
     
     return Pair.of(tfX, tfY);
   }

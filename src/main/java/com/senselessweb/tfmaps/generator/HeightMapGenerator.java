@@ -15,8 +15,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import com.senselessweb.tfmaps.domain.MapModel;
-import com.senselessweb.tfmaps.domain.MapSize;
-import com.senselessweb.tfmaps.web.FrontendServiceConfigurer;
+import com.senselessweb.tfmaps.web.ExposedBeansConfigurer;
 
 @Service
 public class HeightMapGenerator {
@@ -34,7 +33,7 @@ public class HeightMapGenerator {
   
   private final String googleMapsApiKey;
   
-  public HeightMapGenerator(final @Qualifier(FrontendServiceConfigurer.BEAN_GOOGLE_MAPS_API_KEY) String googleMapsApiKey) {
+  public HeightMapGenerator(final @Qualifier(ExposedBeansConfigurer.BEAN_GOOGLE_MAPS_API_KEY) String googleMapsApiKey) {
     this.googleMapsApiKey = googleMapsApiKey;
   }
   
@@ -42,7 +41,7 @@ public class HeightMapGenerator {
     
     try {
       
-      final Pair<Integer, Integer> size = calcStaticImageSize(model.getSize());
+      final Pair<Integer, Integer> size = calcStaticImageSize(model);
       final URL url = new URL(String.format(urlTemplate, 
           model.getCenter().getLat(), model.getCenter().getLng(),
           size.getLeft(), size.getRight(), 
@@ -59,8 +58,8 @@ public class HeightMapGenerator {
           (int) (large.getWidth() - large.getWidth() / 2.0), 
           (int) (large.getHeight() - large.getHeight() / 2.0));
       
-      final BufferedImage resized = Scalr.resize(cropped, Method.ULTRA_QUALITY, model.getSize().getWidth(), model.getSize().getHeight());
-      final BufferedImage png = new BufferedImage(model.getSize().getWidth(), model.getSize().getHeight(), 
+      final BufferedImage resized = Scalr.resize(cropped, Method.ULTRA_QUALITY, model.getWidth().getPixel(), model.getHeight().getPixel());
+      final BufferedImage png = new BufferedImage(model.getWidth().getPixel(), model.getHeight().getPixel(), 
           BufferedImage.TYPE_BYTE_GRAY);
       
       png.getGraphics().drawImage(resized, 0, 0, null);
@@ -72,11 +71,14 @@ public class HeightMapGenerator {
     }
   }
   
-  private Pair<Integer, Integer> calcStaticImageSize(MapSize size) {
-    if (size.getWidth() > size.getHeight()) {
-      return Pair.of(maxBoundSize, maxBoundSize * size.getHeight() / size.getWidth());
+  private Pair<Integer, Integer> calcStaticImageSize(MapModel model) {
+    final int width = model.getWidth().getPixel();
+    final int height = model.getHeight().getPixel();
+    
+    if (width > height) {
+      return Pair.of(maxBoundSize, maxBoundSize * height / width);
     } else {
-      return Pair.of(maxBoundSize * size.getWidth() / size.getHeight(), maxBoundSize);
+      return Pair.of(maxBoundSize * width / height, maxBoundSize);
     }
   }
 

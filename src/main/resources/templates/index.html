@@ -3,27 +3,35 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
 <head>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css"></link>
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
   <link rel="stylesheet" type="text/css" href="main.css"></link>
   <title>Transport Fever Map Creator</title>
 </head>
 <body>
 
   <div id="leftPanel">
-    <div id="map" style="width:1280px;height:1280px"></div>
+    <div id="mapContainer" style="width:1320px;height:900px;overflow:auto;">
+      <div id="map" style="width:1280px;height:1280px;float:right"></div>
+    </div>
   </div>
 
   <div id="rightPanel">
     
-    <h2>Title</h2>
-    <label for="mapTitle">Title</label>                
+    <h2>Transport Fever Map Creator</h2>
+    <label for="mapTitle" style="width:150px;">Title</label>                
     <input name="mapTitle" />
     <br/>
-    <label for="mapDescription">Description</label>                
+    <label for="mapDescription" style="width:150px;">Description</label>                
     <input name="mapDescription" />
     
     <h2>Select map size</h2>
-    <select id="selectMapSize" onchange="updateMapSize()">
-      <option th:each="mapSize : ${@frontendMap.mapSizes}" th:value="${mapSize.name}" th:text="${mapSize.name}">4x4 km</option>
+    <select id="selectMapWidth" onchange="updateMapSize()">
+      <option th:each="mapSize : ${@mapSizes}" th:value="${mapSize.name}" th:text="${mapSize.displayName}">4 km</option>
+    </select>
+    X
+    <select id="selectMapHeight" onchange="updateMapSize()">
+      <option th:each="mapSize : ${@mapSizes}" th:value="${mapSize.name}" th:text="${mapSize.displayName}">4 km</option>
     </select>
 
     <h2>Place objects</h2>
@@ -31,14 +39,16 @@
       <ul>
         <li>
           <input checked="checked" type="radio" name="object" th:value="City"/>                                
-          <label for="City">City</label>                
+          <label for="City">City</label>(<span id="counter-City">0</span>)
         </li>
-        <li th:each="industry: ${@frontendMap.industries}">
+        <li th:each="industry: ${@industries}">
           <input type="radio" name="object" th:value="${industry.name}"/>                                
-          <label th:for="${industry.name}" th:text="${industry.name}" ></label>                
+          <label th:for="${industry.name}" th:text="${industry.displayName}" ></label>(<span th:id="${'counter-' + industry.name}">0</span>)
         </li>
       </ul>
     </fieldset>
+    <input type="button" onclick="deleteAllIndustries()" value="Delete all industries" />
+    <input type="button" onclick="deleteAllCities()" value="Delete all cities" />
     
     <h2>Generate</h2>
     <input type="button" onclick="generate()" value="Generate"></input> 
@@ -46,11 +56,12 @@
   </div>  
 
   <script type="text/javascript" th:inline="javascript">
-  
+    /*<![CDATA[*/
+    	
   	var map; 
 	var gMapMaxSize = 1280;
-  	var mapSizes = [[${@frontendMap.mapSizesByName}]];
-  	var industries = [[${@frontendMap.industriesByName}]];
+  	var mapSizes = [[${@mapSizesByName}]];
+  	var industries = [[${@industriesByName}]];
   	var objects = {};
   	var objectId = 1;
   
@@ -66,37 +77,85 @@
   	}
 
   	function placeMarker(latLng, map) {
-      var newObject = createNewObject(latLng);
-      newObject.marker = new google.maps.Marker({
-  	    position: latLng,
-  	    label: newObject.json.type,
-  	    draggable: true,
-  	    map: map
-  	  });
-  	  newObject.marker.addListener('click', function() {
-  	    newObject.infoWindow.open(map, newObject.marker);
-  	  });
-  	  objects[newObject.id] = newObject;
+  	  $.get([[@{https://maps.googleapis.com/maps/api/geocode/json(key=${@googleMapsApiKey},result_type='locality',latlng='')}]] + latLng.toUrlValue(), function(places) {
+  		  
+        var newObject = createNewObject(latLng, findCityName(places));
+        newObject.marker = new google.maps.Marker({
+  	      position: latLng,
+  	      label: newObject.json.type,
+  	      draggable: true,
+  	      map: map
+  	    });
+  	    newObject.marker.addListener('click', function() {
+  	      newObject.infoWindow.open(map, newObject.marker);
+  	    });
+  	    objects[newObject.id] = newObject;
+		$("#counter-" + newObject.json.type).text(parseInt($("#counter-" + newObject.json.type).text()) + 1);
+      });
+  	}
+
+  	function findCityName(places) {
+  		var cityName = '';
+  		for (var i = 0; i < places.results.length; i++) {
+  			var components = places.results[i].address_components;
+  	  		for (var j = 0; j < components.length; j++) {
+  	  			var component = components[j];
+  	  			if (component.types.indexOf('locality') != -1) {
+  	  				cityName = component.short_name;
+  	  			}
+  	  		}
+  		}
+  		return cityName;
   	}
   	
-  	function createNewObject(latLng) {
+  	function createNewObject(latLng, cityName) {
   		var type = $('input[name=object]:checked').val();
   		var result = {};
   		result.id = objectId++;
   		result.json = {};
   		result.json.type = type;
-  		result.json.name = '';
+  		result.json.name = cityName;
+  		result.json.size = 1.0;
   		result.json.position = latLng.toJSON();
-    	result.infoWindow = new google.maps.InfoWindow({
-    		content: '<h3>' + result.type + '</h3>' +
-    			'Name:<input type="input" onkeyup="updateObjectName(' + result.id + ', this)"/><br/>' +
-    			'<input type="button" value="Delete" onclick="deleteObject(' + result.id + ')" />'
-    	});
+  		if (type == 'City') {  			
+        	result.infoWindow = new google.maps.InfoWindow({
+        		content: '<h3>' + cityName + '</h3>' +
+	    			'Name:<input type="input" value="' + result.json.name + '" onkeyup="updateObjectName(' + result.id + ', this)"/><br/>' +
+    				'Size:<input type="number" min="0.1" max="3" value="' + result.json.size + '" onkeyup="updateObjectSize(' + result.id + ', this)"/><br/>' +
+        			'<input type="button" value="Delete" onclick="deleteObject(' + result.id + ')" />'
+        	});
+  		} else {
+        	result.infoWindow = new google.maps.InfoWindow({
+        		content: '<h3>' + result.json.type + '</h3>' +
+        			'<input type="button" value="Delete" onclick="deleteObject(' + result.id + ')" />'
+        	});
+  		}
     	return result;
+  	}
+  	
+  	function deleteAllIndustries() {
+  		for (var key in objects) {
+    		if (objects.hasOwnProperty(key)) {
+    			  if (objects[key].json.type != 'City') {
+    				deleteObject(objects[key].id);
+    			  }
+    		}
+  		}
+  	}
+  	
+  	function deleteAllCities() {
+  		for (var key in objects) {
+    		if (objects.hasOwnProperty(key)) {
+    			  if (objects[key].json.type == 'City') {
+    				deleteObject(objects[key].id);
+    			  }
+    		}
+  		}
   	}
   	
   	function deleteObject(id) {
   		objects[id].marker.setMap(null);
+		$("#counter-" + objects[id].json.type).text(parseInt($("#counter-" + objects[id].json.type).text()) - 1);
   		delete objects[id];
   	}
 
@@ -104,14 +163,19 @@
   		objects[id].json.name = input.value;
   	}
 
+  	function updateObjectSize(id, input) {
+  		objects[id].json.size = input.value;
+  	}
+
   	function updateMapSize() {
-  		var mapSize = mapSizes[$("#selectMapSize").val()];
-  		if (mapSize.width > mapSize.height) {
-  	  		var height = (gMapMaxSize * mapSize.height) / mapSize.width;
+  		var mapWidth = mapSizes[$("#selectMapWidth").val()].pixel;
+  		var mapHeight = mapSizes[$("#selectMapHeight").val()].pixel;
+  		if (mapWidth > mapHeight) {
+  	  		var height = (gMapMaxSize * mapHeight) / mapWidth;
   	 		$("#map").width(gMapMaxSize);
   	 		$("#map").height(height);
   		} else {
-  	  		var width = (gMapMaxSize * mapSize.width) / mapSize.height;
+  	  		var width = (gMapMaxSize * mapWidth) / mapHeight;
   	 		$("#map").width(width);
   	 		$("#map").height(gMapMaxSize);
   		}
@@ -126,7 +190,8 @@
   		data.zoom = map.getZoom();
   		data.northEast = map.getBounds().getNorthEast().toJSON();
   		data.southWest = map.getBounds().getSouthWest().toJSON();
-  		data.size = mapSizes[$("#selectMapSize").val()].name;
+  		data.width = mapSizes[$("#selectMapWidth").val()].name;
+  		data.height = mapSizes[$("#selectMapHeight").val()].name;
   		data.cities = [];
   		data.industries = [];
   		
@@ -154,7 +219,7 @@
   		    dataType: 'json'
   		});
   	}
-
+  	/*]]>*/
   </script>
   <script th:src="@{https://maps.googleapis.com/maps/api/js(key=${@googleMapsApiKey},callback='initMap')}" async="async" defer="defer"></script>
 

@@ -13,7 +13,8 @@ public class MapModel {
   private final LatLng southWest;
   private final Collection<CityModel> cities;
   private final Collection<IndustryModel> industries;
-  private final MapSize size;
+  private final MapSize width;
+  private final MapSize height;
   private final LatLng center;
   private final int zoom;
   
@@ -27,7 +28,8 @@ public class MapModel {
       final @JsonProperty("southWest") LatLng southWest, 
       final @JsonProperty("cities") Collection<CityModel> cities, 
       final @JsonProperty("industries") Collection<IndustryModel> industries, 
-      final @JsonProperty("size") MapSize size) {
+      final @JsonProperty("width") MapSize width,
+      final @JsonProperty("height") MapSize height) {
     
     this.name = name;
     this.zoom = zoom;
@@ -37,7 +39,8 @@ public class MapModel {
     this.southWest = southWest;
     this.cities = cities;
     this.industries = industries;
-    this.size = size;
+    this.width = width;
+    this.height = height;
   }
   
   public String getName() {
@@ -72,7 +75,11 @@ public class MapModel {
     return industries;
   }
   
-  public MapSize getSize() {
-    return size;
+  public MapSize getWidth() {
+    return width;
+  }
+  
+  public MapSize getHeight() {
+    return height;
   }
 }
