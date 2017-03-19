@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Collection;
 
 import org.assertj.core.util.Lists;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.senselessweb.tfmaps.domain.CityModel;
@@ -13,6 +14,7 @@ import com.senselessweb.tfmaps.domain.LatLng;
 import com.senselessweb.tfmaps.domain.MapModel;
 import com.senselessweb.tfmaps.domain.MapSize;
 
+@Ignore
 public class LuaMapGeneratorTest {
 
   @Test
