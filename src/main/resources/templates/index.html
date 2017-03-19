@@ -8,10 +8,8 @@
 </head>
 <body>
 
-  <h1 id="mainTitle">Transport Fever Map Creator</h1>
-  
   <div id="leftPanel">
-    <div id="map" style="width:1000px;height:1000px"></div>
+    <div id="map" style="width:1280px;height:1280px"></div>
   </div>
 
   <div id="rightPanel">
@@ -50,7 +48,7 @@
   <script type="text/javascript" th:inline="javascript">
   
   	var map; 
-	var gMapWidth = 1000;
+	var gMapMaxSize = 1280;
   	var mapSizes = [[${@frontendMap.mapSizesByName}]];
   	var industries = [[${@frontendMap.industriesByName}]];
   	var objects = {};
@@ -108,8 +106,15 @@
 
   	function updateMapSize() {
   		var mapSize = mapSizes[$("#selectMapSize").val()];
-  		var height = (1000 * mapSize.height) / mapSize.width;
- 		$("#map").height(height);
+  		if (mapSize.width > mapSize.height) {
+  	  		var height = (gMapMaxSize * mapSize.height) / mapSize.width;
+  	 		$("#map").width(gMapMaxSize);
+  	 		$("#map").height(height);
+  		} else {
+  	  		var width = (gMapMaxSize * mapSize.width) / mapSize.height;
+  	 		$("#map").width(width);
+  	 		$("#map").height(gMapMaxSize);
+  		}
  		google.maps.event.trigger(map, "resize");
   	}
   	

@@ -29,7 +29,7 @@ public class LuaMapGenerator {
         "name  = _('%s')," + System.lineSeparator() +
         "  description = _('%s')," + System.lineSeparator() +
         "  minGameVersion = '10000'," + System.lineSeparator() +
-        "  range = {90, 130 }," + System.lineSeparator() +
+        "  range = {80, 120 }," + System.lineSeparator() +
         "  seed = '%s'," + System.lineSeparator() +
         "  tags  = {'map'}," + System.lineSeparator() +
         "  towns = towns," + System.lineSeparator() +

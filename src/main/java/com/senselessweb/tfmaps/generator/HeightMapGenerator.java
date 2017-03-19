@@ -9,6 +9,8 @@ import java.net.URL;
 import javax.imageio.ImageIO;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.imgscalr.Scalr;
+import org.imgscalr.Scalr.Method;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -44,22 +46,24 @@ public class HeightMapGenerator {
       final URL url = new URL(String.format(urlTemplate, 
           model.getCenter().getLat(), model.getCenter().getLng(),
           size.getLeft(), size.getRight(), 
-          model.getZoom() - 1, googleMapsApiKey));
+          model.getZoom() - 2, googleMapsApiKey));
+      System.out.println(url);
       
       final InputStream is = new BufferedInputStream(url.openStream());
       final BufferedImage large = ImageIO.read(is);
       ImageIO.write(large, "png", new File(target.getParentFile(), "tmp.png"));
       
+      final BufferedImage cropped = Scalr.crop(large,
+          (int) (large.getWidth() / 4.0), 
+          (int) (large.getHeight() / 4.0), 
+          (int) (large.getWidth() - large.getWidth() / 2.0), 
+          (int) (large.getHeight() - large.getHeight() / 2.0));
       
+      final BufferedImage resized = Scalr.resize(cropped, Method.ULTRA_QUALITY, model.getSize().getWidth(), model.getSize().getHeight());
       final BufferedImage png = new BufferedImage(model.getSize().getWidth(), model.getSize().getHeight(), 
           BufferedImage.TYPE_BYTE_GRAY);
       
-      png.getGraphics().drawImage(large, 
-          0, 0, png.getWidth(), png.getHeight(),
-          (int) (large.getWidth() / 4.0), (int) (large.getHeight() / 4.0), 
-          (int) (large.getWidth() - large.getWidth() / 4.0), 
-          (int) (large.getHeight() - large.getHeight() / 4.0),
-          null);
+      png.getGraphics().drawImage(resized, 0, 0, null);
       
       ImageIO.write(png, "png", target);
       
