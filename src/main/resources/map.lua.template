@@ -1,0 +1,25 @@
+﻿local towns = {
+  { pos = { -109.7860, -4220.4032 },	 name = _("Wilhelmsburg"), sizeFactor = 1.8},  
+}
+
+local industries = {
+  { pos = { 6948.1972, 2016.6047 }, 	angle = 3.7501855547303, 	fileName ="industry/steel_mill.con"},
+}
+
+function data() return {
+  authors = {
+    { 
+      name         = 'Jey Bee',
+      role         = 'CREATOR',
+      steamProfile = ''
+    }
+  },
+  name  = _('%NAME%'),
+  description = _('Freie und Hansestadt Hamburg'),
+  minGameVersion = '10000',
+  range = {86.5, 650 },
+  seed = 'Hamburg',
+  tags  = {'map'},
+  towns = towns,
+  industries = industries
+} end

@@ -1,0 +1,10 @@
+
+
+#leftPanel, #rightPanel, #title {
+	margin: 10px;
+}
+
+#leftPanel, #rightPanel {
+	float: left;
+}
+

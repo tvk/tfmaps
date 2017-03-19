@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="main.css"></link>
+  <title>Transport Fever Map Creator</title>
+</head>
+<body>
+
+  <h1 id="mainTitle">Transport Fever Map Creator</h1>
+  
+  <div id="leftPanel">
+    <div id="map" style="width:1000px;height:1000px"></div>
+  </div>
+
+  <div id="rightPanel">
+    
+    <h2>Title</h2>
+    <label for="mapTitle">Title</label>                
+    <input name="mapTitle" />
+    <br/>
+    <label for="mapDescription">Description</label>                
+    <input name="mapDescription" />
+    
+    <h2>Select map size</h2>
+    <select id="selectMapSize" onchange="updateMapSize()">
+      <option th:each="mapSize : ${@frontendMap.mapSizes}" th:value="${mapSize.name}" th:text="${mapSize.name}">4x4 km</option>
+    </select>
+
+    <h2>Place objects</h2>
+    <fieldset>
+      <ul>
+        <li>
+          <input checked="checked" type="radio" name="object" th:value="City"/>                                
+          <label for="City">City</label>                
+        </li>
+        <li th:each="industry: ${@frontendMap.industries}">
+          <input type="radio" name="object" th:value="${industry.name}"/>                                
+          <label th:for="${industry.name}" th:text="${industry.name}" ></label>                
+        </li>
+      </ul>
+    </fieldset>
+    
+    <h2>Generate</h2>
+    <input type="button" onclick="generate()" value="Generate"></input> 
+    
+  </div>  
+
+  <script type="text/javascript" th:inline="javascript">
+  
+  	var map; 
+	var gMapWidth = 1000;
+  	var mapSizes = [[${@frontendMap.mapSizesByName}]];
+  	var industries = [[${@frontendMap.industriesByName}]];
+  	var objects = {};
+  	var objectId = 1;
+  
+  	function initMap() {
+  		map = new google.maps.Map(document.getElementById('map'), {
+            center: {lat: -34.397, lng: 150.644},
+            zoom: 8
+          });
+
+  	  	map.addListener('click', function(e) {
+  	    	placeMarker(e.latLng, map);
+  	  	});
+  	}
+
+  	function placeMarker(latLng, map) {
+      var newObject = createNewObject(latLng);
+      newObject.marker = new google.maps.Marker({
+  	    position: latLng,
+  	    label: newObject.json.type,
+  	    draggable: true,
+  	    map: map
+  	  });
+  	  newObject.marker.addListener('click', function() {
+  	    newObject.infoWindow.open(map, newObject.marker);
+  	  });
+  	  objects[newObject.id] = newObject;
+  	}
+  	
+  	function createNewObject(latLng) {
+  		var type = $('input[name=object]:checked').val();
+  		var result = {};
+  		result.id = objectId++;
+  		result.json = {};
+  		result.json.type = type;
+  		result.json.name = '';
+  		result.json.position = latLng.toJSON();
+    	result.infoWindow = new google.maps.InfoWindow({
+    		content: '<h3>' + result.type + '</h3>' +
+    			'Name:<input type="input" onkeyup="updateObjectName(' + result.id + ', this)"/><br/>' +
+    			'<input type="button" value="Delete" onclick="deleteObject(' + result.id + ')" />'
+    	});
+    	return result;
+  	}
+  	
+  	function deleteObject(id) {
+  		objects[id].marker.setMap(null);
+  		delete objects[id];
+  	}
+
+  	function updateObjectName(id, input) {
+  		objects[id].json.name = input.value;
+  	}
+
+  	function updateMapSize() {
+  		var mapSize = mapSizes[$("#selectMapSize").val()];
+  		var height = (1000 * mapSize.height) / mapSize.width;
+ 		$("#map").height(height);
+ 		google.maps.event.trigger(map, "resize");
+  	}
+  	
+  	function generate() {
+  		var data = {};
+  		data.name = $('input[name=mapTitle]').val();
+  		data.description = $("input[name=mapDescription]").val();
+  		data.center = map.getCenter().toJSON();
+  		data.zoom = map.getZoom();
+  		data.northEast = map.getBounds().getNorthEast().toJSON();
+  		data.southWest = map.getBounds().getSouthWest().toJSON();
+  		data.size = mapSizes[$("#selectMapSize").val()].name;
+  		data.cities = [];
+  		data.industries = [];
+  		
+  		for (var key in objects) {
+  		  if (objects.hasOwnProperty(key)) {
+  			var object = objects[key];
+  			if (object.json.type == 'City') {
+  			  data.cities.push(object.json)
+  			} else {
+    		  data.industries.push(object.json)
+  			}
+  		  }
+  		}
+  		
+  		console.log(data);
+  		
+  		$.ajax({
+  		    type: 'POST',
+  		    url: '/generator/',
+  		    data: JSON.stringify(data),
+  		    success: function(result) { 
+  		  		console.log(result);
+  		    },
+  		    contentType: "application/json",
+  		    dataType: 'json'
+  		});
+  	}
+
+  </script>
+  <script th:src="@{https://maps.googleapis.com/maps/api/js(key=${@googleMapsApiKey},callback='initMap')}" async="async" defer="defer"></script>
+
+</body>
+</html>
